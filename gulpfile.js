@@ -4,7 +4,9 @@ var gulp       = require('gulp'),
     stylish    = require('jshint-stylish'),
     browserify = require('browserify'),
     mainBowerFiles = require('main-bower-files'),
-    source      = require('vinyl-source-stream');
+    source      = require('vinyl-source-stream'),
+    open        = require('open');
+
 
 var gulpLoadOptions = {
       'rename': {
@@ -32,7 +34,25 @@ var SETTINGS = {
   }
 };
 
+var serverConfig = {
+  root: 'dist',
+  host: 'localhost',
+  port: 8080,
+  livereload: true
+}
+
 var $ = require('gulp-load-plugins')(gulpLoadOptions);
+
+/*============================================================
+=                          server                            =
+============================================================*/
+
+gulp.task('server', function() {
+  console.log('------------------------------------------------- listen web server');
+  $.connect.server(serverConfig);
+  console.log('Started connect web server on http://localhost:' + serverConfig.port + '.');
+  open('http://' + serverConfig.host + ':' + serverConfig.port);
+});
 
 /*============================================================
 =                          bower-copy                   =
@@ -78,7 +98,7 @@ gulp.task('compile:jade', function() {
     pretty: true
   }))
   .pipe(gulp.dest(SETTINGS.build.dist))
-  .pipe($.livereload());
+  .pipe($.connect.reload());
 });
 
 gulp.task('compile:scss', function(){
@@ -93,7 +113,7 @@ gulp.task('compile:scss', function(){
   }))
   .on('error', function (err) { console.log(err.message); })
   .pipe(gulp.dest(SETTINGS.build.css))
-  .pipe($.livereload());
+  .pipe($.connect.reload());
 });
 
 
@@ -105,7 +125,7 @@ gulp.task('compile:browserify', ['jshint'], function() {
   .on('error', $.util.log.bind($.util, 'Browserify Error'))
   .pipe(source('all.js'))
   .pipe(gulp.dest(SETTINGS.build.js))
-  .pipe($.livereload());
+  .pipe($.connect.reload());
 });
 
 gulp.task('compile:pluginJS', function(){
@@ -144,7 +164,7 @@ gulp.task('jshint', function() {
 ============================================================*/
 
 gulp.task('watch', function() {
-  $.livereload.listen();
+  // $.livereload.listen();
   gulp.watch(SETTINGS.src.app + '**/*.jade', ['clean:html', 'compile:jade']);
   gulp.watch(SETTINGS.src.css + '*.scss', ['clean:css', 'compile:scss', 'compile:pluginCSS']);
   gulp.watch([SETTINGS.src.js + '**/*.js', '!' + SETTINGS.src.vendor + '**/*.js'], ['clean:js', 'compile:browserify', 'compile:pluginJS']);
@@ -191,6 +211,6 @@ gulp.task('build', ['bower-copy', 'compile', 'watch'], function() {
 =                          default                   =
 ============================================================*/
 
-gulp.task('default', ['build']);
+gulp.task('default', ['build', 'server']);
 
 gulp.task('prod', ['build:prod']);
